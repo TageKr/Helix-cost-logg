@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16202a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="12V Log">
+<title>Helix 12V Work Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* ============ SETTINGS: paste your Apps Script web app URL in the script below (API_URL) ============ */
+:root{
+  --bg:#eef1f3; --panel:#ffffff; --ink:#16202a; --muted:#5d6b78; --line:#d5dce2;
+  --accent:#d69a00; --accent-ink:#1a1400; --danger:#b3261e; --ok:#1f7a4d;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f151b; --panel:#17202a; --ink:#e6ecf1; --muted:#93a2b0; --line:#2a3743;
+  --accent:#f2b81f; --accent-ink:#1a1400; --danger:#ff8a80; --ok:#5fd39a; color-scheme:dark}}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:960px;margin:0 auto;padding-block:20px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  border-bottom:3px solid var(--accent);padding-bottom:10px}
+h1{font-family:var(--f-display);font-weight:700;font-size:2rem;line-height:1;margin:0;letter-spacing:.01em}
+h1 .v{display:inline-block;background:var(--accent);color:var(--accent-ink);padding:2px 8px;margin-right:6px;border-radius:3px}
+.sub{color:var(--muted);font-size:.85rem;margin:4px 0 0}
+.who{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);display:flex;gap:8px;align-items:center}
+.who button{padding:4px 10px;font-size:.78rem;font-weight:500}
+
+h2{font-family:var(--f-display);font-weight:600;font-size:1.15rem;text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px;color:var(--muted)}
+
+form,.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.types{display:flex;flex-wrap:wrap;gap:6px}
+.types input{position:absolute;opacity:0;pointer-events:none}
+.types label{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:500;font-size:.9rem;cursor:pointer;user-select:none;background:var(--bg)}
+.types input:checked+label{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.types input:focus-visible+label{outline:2px solid var(--ink);outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field.wide{grid-column:1/-1}
+.field label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+input[type=text],input[type=number],input[type=password],select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:9px 10px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+textarea{resize:vertical;min-height:44px}
+.unit{position:relative}
+.unit span{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-family:var(--f-mono);font-size:.8rem;pointer-events:none}
+.unit input{padding-right:40px;font-family:var(--f-mono)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button{font:inherit;font-weight:600;border-radius:4px;padding:10px 16px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.msg{font-size:.88rem;color:var(--muted)}
+.msg.err{color:var(--danger)} .msg.ok{color:var(--ok)}
+[hidden]{display:none!important}
+
+.tally{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.tally div{background:var(--panel);padding:10px 12px;min-width:0}
+.tally b{display:block;font-family:var(--f-mono);font-weight:500;font-size:1.25rem;font-variant-numeric:tabular-nums}
+.tally small{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.06em}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.toolbar select,.toolbar input{width:auto;flex:1 1 150px}
+.log{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel)}
+.entry{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;padding:12px;border-top:1px solid var(--line);align-items:start}
+.entry:first-child{border-top:0}
+.tag{font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:.8rem;padding:3px 8px;border-radius:3px;background:var(--bg);border:1px solid var(--line);white-space:nowrap}
+.body{min-width:0}
+.line1{font-weight:600;overflow-wrap:anywhere}
+.specs{font-family:var(--f-mono);font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:2px;align-items:center}
+.sw{display:inline-block;width:11px;height:11px;border-radius:50%;border:1px solid var(--line);vertical-align:-1px;margin-right:4px}
+.note{font-size:.9rem;margin-top:4px;overflow-wrap:anywhere}
+.meta{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);text-align:right;white-space:nowrap}
+.meta button{padding:3px 8px;font-size:.75rem;margin-top:6px;font-weight:500}
+.meta button.confirm{border-color:var(--danger);color:var(--danger)}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--ink);font-family:var(--f-display);font-size:1.2rem;margin-bottom:4px}
+@media (max-width:520px){.entry{grid-template-columns:1fr auto}.entry .tag{grid-column:1/-1;justify-self:start}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="v">12V</span>Work Log</h1>
+      <p class="sub">Helix LV system · every cut, crimp and solder joint, logged by the team</p>
+    </div>
+    <div class="who"><span id="who"></span><button type="button" id="editMe" hidden>Change</button></div>
+  </header>
+
+  <!-- First-time setup: name + team PIN, remembered on this phone -->
+  <section id="setup" hidden>
+    <div class="panel">
+      <h2 style="margin:0">Join the log</h2>
+      <div class="grid">
+        <div class="field"><label for="myname">Your name</label><input type="text" id="myname" placeholder="e.g. Ola"></div>
+        <div class="field"><label for="mypin">Team PIN</label><input type="password" id="mypin" inputmode="numeric" placeholder="Ask the electrical lead"></div>
+      </div>
+      <div class="row"><button type="button" class="primary" id="join">Continue</button><span class="msg" id="setupMsg" role="status"></span></div>
+    </div>
+  </section>
+
+  <div id="main" hidden>
+  <section>
+    <h2>New entry</h2>
+    <form id="f" autocomplete="off">
+      <div class="types" role="radiogroup" aria-label="Type of work" id="types"></div>
+      <div class="grid">
+        <div class="field">
+          <label for="circuit">Circuit / harness</label>
+          <input type="text" id="circuit" list="circuits" placeholder="e.g. Fuel pump">
+          <datalist id="circuits"></datalist>
+        </div>
+        <div class="field" data-for="wire">
+          <label for="len">Wire length</label>
+          <div class="unit"><input type="number" id="len" inputmode="decimal" min="0" step="1" placeholder="0"><span>mm</span></div>
+        </div>
+        <div class="field">
+          <label for="qty">Quantity</label>
+          <input type="number" id="qty" inputmode="numeric" min="1" step="1" value="1">
+        </div>
+        <div class="field" data-for="wire">
+          <label for="gauge">Cross-section</label>
+          <select id="gauge">
+            <option value="">—</option>
+            <option>0.35 mm²</option><option>0.5 mm²</option><option>0.75 mm²</option><option>1.0 mm²</option>
+            <option>1.5 mm²</option><option>2.5 mm²</option><option>4 mm²</option><option>6 mm²</option>
+            <option>10 mm²</option><option>16 mm²</option><option>25 mm²</option>
+          </select>
+        </div>
+        <div class="field" data-for="wire">
+          <label for="color">Wire colour</label>
+          <select id="color"></select>
+        </div>
+        <div class="field">
+          <label for="conn">Connector / pin</label>
+          <input type="text" id="conn" placeholder="e.g. DTM-12 pin 4">
+        </div>
+        <div class="field wide">
+          <label for="note">Notes</label>
+          <textarea id="note" rows="2" placeholder="What you did, anything odd, measurement values…"></textarea>
+        </div>
+      </div>
+      <div class="row">
+        <button type="submit" class="primary" id="save">Log entry</button>
+        <span class="msg" id="msg" role="status"></span>
+      </div>
+    </form>
+  </section>
+
+  <section style="margin-top:20px">
+    <h2>Totals</h2>
+    <div class="tally" id="tally"></div>
+  </section>
+
+  <section style="margin-top:20px">
+    <h2>Log</h2>
+    <div class="toolbar">
+      <select id="ftype" aria-label="Filter by type"><option value="">All types</option></select>
+      <input type="text" id="fq" placeholder="Search circuit, connector, notes, name" aria-label="Search">
+      <button type="button" id="refresh">Refresh</button>
+    </div>
+    <div class="log" id="log"><div class="empty"><strong>Loading the log…</strong>Entries from everyone on the team show up here.</div></div>
+  </section>
+  </div>
+</div>
+
+<script>
+// ===== Paste your Apps Script web app URL here (ends in /exec) =====
+const API_URL = "https://script.google.com/a/macros/helixnmbu.no/s/AKfycbxA-n6IiP2XjkV1V7DT7TmEvSbSXJrxJrsESt6qP3ujCNT9KYsGyADLtxy6i0OX4hC-/exec";
+
+const TYPES=[
+  {k:"cut",l:"Wire cut",wire:true},{k:"crimp",l:"Crimp",wire:false},{k:"solder",l:"Solder joint",wire:false},
+  {k:"splice",l:"Splice",wire:true},{k:"shrink",l:"Heat shrink",wire:false},{k:"pin",l:"Pin inserted",wire:false},
+  {k:"test",l:"Test / measure",wire:false},{k:"rework",l:"Rework / fix",wire:false},{k:"other",l:"Other",wire:false}
+];
+const COLORS=[["","—",""],["Red","Red","#d32f2f"],["Black","Black","#111"],["White","White","#fafafa"],["Yellow","Yellow","#f5c400"],["Blue","Blue","#1e63d6"],["Green","Green","#2e9d4f"],["Brown","Brown","#7a4a24"],["Orange","Orange","#f07c00"],["Grey","Grey","#8a8f94"],["Violet","Violet","#7b45c2"],["Pink","Pink","#ef6ea8"],["Other","Other / striped",""]];
+const CIRCUITS=["Main harness","Battery / LVMS","Master switch","ECU","Ignition","Injectors","Fuel pump","Starter","Cooling fan","Water pump","Dash","Sensors","Brake light","Shutdown circuit","Data logger","CAN bus","Ground"];
+const byLabel=Object.fromEntries(TYPES.map(t=>[t.l,t]));
+const cmap=Object.fromEntries(COLORS.map(c=>[c[0],c]));
+const $=id=>document.getElementById(id);
+
+const store={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let me=store.get("helix12v.name"), pin=store.get("helix12v.pin"), entries=[], pendingDel=null, loading=false;
+
+$("types").innerHTML=TYPES.map((t,i)=>`<input type="radio" name="type" id="t-${t.k}" value="${t.l}"${i===0?" checked":""}><label for="t-${t.k}">${t.l}</label>`).join("");
+$("color").innerHTML=COLORS.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join("");
+$("circuits").innerHTML=CIRCUITS.map(c=>`<option value="${c}">`).join("");
+$("ftype").innerHTML+=TYPES.map(t=>`<option>${t.l}</option>`).join("");
+
+const curType=()=>document.querySelector('input[name=type]:checked').value;
+function syncFields(){const w=byLabel[curType()].wire;document.querySelectorAll('[data-for=wire]').forEach(el=>el.style.opacity=w?1:.55)}
+$("types").addEventListener("change",syncFields);syncFields();
+
+const fmtLen=mm=>mm>=1000?(mm/1000).toFixed(2).replace(/\.?0+$/,"")+" m":Math.round(mm)+" mm";
+const fmtTime=ts=>{const d=new Date(ts);return d.toLocaleDateString("nb-NO",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("nb-NO",{hour:"2-digit",minute:"2-digit"})};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const strip=s=>String(s||"").replace(/^'/,"");
+function flash(el,t,kind){el.textContent=t;el.className="msg "+(kind||"");if(kind==="ok")setTimeout(()=>{if(el.textContent===t)el.textContent=""},3000)}
+
+// ---- API ----
+async function apiGet(){
+  const r=await fetch(API_URL+"?pin="+encodeURIComponent(pin));
+  return r.json();
+}
+async function apiPost(body){
+  // text/plain avoids a CORS preflight, which Apps Script can't answer
+  const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({pin,...body})});
+  return r.json();
+}
+
+// ---- Setup / identity ----
+function showSetup(){$("setup").hidden=false;$("main").hidden=true;$("editMe").hidden=true;$("myname").value=me;$("mypin").value=pin;$("who").textContent=""}
+async function showMain(){$("setup").hidden=true;$("main").hidden=false;$("editMe").hidden=false;$("who").textContent="Logging as "+me;await load()}
+$("editMe").onclick=showSetup;
+$("join").onclick=async()=>{
+  const n=$("myname").value.trim(),p=$("mypin").value.trim();
+  if(!n){flash($("setupMsg"),"Enter your name so entries show who did the work.","err");return}
+  if(!p){flash($("setupMsg"),"Enter the team PIN.","err");return}
+  pin=p;flash($("setupMsg"),"Checking PIN…");
+  try{const res=await apiGet();if(!res.ok){flash($("setupMsg"),"That PIN is wrong. Ask the electrical lead for the current one.","err");return}
+    me=n;store.set("helix12v.name",n);store.set("helix12v.pin",p);entries=res.rows;showMain()}
+  catch(e){flash($("setupMsg"),"Couldn’t reach the log. Check your connection and try again.","err")}
+};
+
+// ---- Load / render ----
+async function load(){
+  if(loading)return;loading=true;$("refresh").disabled=true;
+  try{const res=await apiGet();
+    if(!res.ok&&res.error==="pin"){pin="";store.set("helix12v.pin","");showSetup();flash($("setupMsg"),"The team PIN has changed. Enter the new one.","err");return}
+    entries=(res.rows||[]).sort((a,b)=>b.ts-a.ts);render();
+  }catch(e){if(!entries.length)$("log").innerHTML=`<div class="empty"><strong>Couldn’t load the log</strong>Check your connection, then tap Refresh.</div>`}
+  finally{loading=false;$("refresh").disabled=false}
+}
+function renderTally(){
+  const count=l=>entries.filter(e=>e.type===l).reduce((a,e)=>a+(e.qty||1),0);
+  const wireMm=entries.filter(e=>byLabel[e.type]?.wire&&e.len).reduce((a,e)=>a+e.len*(e.qty||1),0);
+  $("tally").innerHTML=[[fmtLen(wireMm),"Wire cut total"],[count("Wire cut"),"Wires cut"],[count("Crimp"),"Crimps"],[count("Solder joint"),"Solder joints"],[count("Splice"),"Splices"],[entries.length,"Log entries"]]
+    .map(c=>`<div><b>${c[0]}</b><small>${c[1]}</small></div>`).join("");
+}
+function renderLog(){
+  const ft=$("ftype").value,q=$("fq").value.trim().toLowerCase();
+  const list=entries.filter(e=>(!ft||e.type===ft)&&(!q||[e.circuit,e.conn,e.note,e.gauge,e.color,e.by].join(" ").toLowerCase().includes(q)));
+  if(!entries.length){$("log").innerHTML=`<div class="empty"><strong>No entries yet</strong>Pick what you did above, fill in the details and tap “Log entry”.</div>`;return}
+  if(!list.length){$("log").innerHTML=`<div class="empty"><strong>Nothing matches</strong>Clear the filter or search to see all ${entries.length} entries.</div>`;return}
+  $("log").innerHTML=list.map(e=>{
+    const c=cmap[e.color],specs=[];
+    if(e.len)specs.push(fmtLen(e.len)+(e.qty>1?` × ${e.qty}`:""));else if(e.qty>1)specs.push(`× ${e.qty}`);
+    if(e.gauge)specs.push(esc(e.gauge));
+    if(e.color)specs.push(`<span><span class="sw" style="background:${c&&c[2]?c[2]:"transparent"}"></span>${esc(c?c[1]:e.color)}</span>`);
+    if(e.conn)specs.push(esc(strip(e.conn)));
+    const mine=e.by===me;
+    const del=mine?`<br><button type="button" data-del="${esc(e.id)}" class="${pendingDel===e.id?"confirm":""}">${pendingDel===e.id?"Tap again to delete":"Delete"}</button>`:"";
+    return `<div class="entry"><span class="tag">${esc(e.type)}</span>
+      <div class="body"><div class="line1">${esc(strip(e.circuit)||"No circuit given")}</div>
+      ${specs.length?`<div class="specs">${specs.join("<span>·</span>")}</div>`:""}
+      ${e.note?`<div class="note">${esc(strip(e.note))}</div>`:""}</div>
+      <div class="meta">${fmtTime(e.ts)}<br>${esc(mine?"you":(strip(e.by)||"Someone"))}${del}</div></div>`;
+  }).join("");
+}
+function render(){renderTally();renderLog()}
+$("ftype").addEventListener("change",renderLog);
+$("fq").addEventListener("input",renderLog);
+$("refresh").onclick=load;
+
+$("log").addEventListener("click",async ev=>{
+  const b=ev.target.closest("[data-del]");if(!b)return;const id=b.dataset.del;
+  if(pendingDel!==id){pendingDel=id;renderLog();setTimeout(()=>{if(pendingDel===id){pendingDel=null;renderLog()}},4000);return}
+  pendingDel=null;b.disabled=true;
+  try{const r=await apiPost({action:"delete",id});if(r.ok){entries=entries.filter(e=>e.id!==id);render();flash($("msg"),"Entry deleted.","ok")}else flash($("msg"),"Couldn’t delete that entry. Tap Refresh and try again.","err")}
+  catch(e){flash($("msg"),"Couldn’t delete. Check your connection and try again.","err")}
+});
+
+$("f").addEventListener("submit",async ev=>{
+  ev.preventDefault();
+  const type=curType(),wire=byLabel[type].wire,len=parseFloat($("len").value),qty=Math.max(1,parseInt($("qty").value)||1);
+  const entry={type,qty,by:me,circuit:$("circuit").value.trim(),conn:$("conn").value.trim(),note:$("note").value.trim(),
+    len:wire&&len>0?Math.round(len):"",gauge:wire?$("gauge").value:"",color:wire?$("color").value:""};
+  if(type==="Wire cut"&&!entry.len){flash($("msg"),"Add the wire length for a cut.","err");$("len").focus();return}
+  $("save").disabled=true;flash($("msg"),"Saving…");
+  try{const r=await apiPost({action:"add",entry});
+    if(r.ok){entries.unshift({...entry,id:r.id,ts:Date.now()});render();$("note").value="";$("len").value="";$("qty").value="1";$("conn").value="";flash($("msg"),"Logged.","ok")}
+    else if(r.error==="pin"){showSetup();flash($("setupMsg"),"The team PIN has changed. Enter the new one.","err")}
+    else flash($("msg"),"Couldn’t save. Try again.","err");
+  }catch(e){flash($("msg"),"Couldn’t save. Check your connection and try again.","err")}
+  finally{$("save").disabled=false}
+});
+
+// start
+if(API_URL.startsWith("PASTE")){$("setup").hidden=false;flash($("setupMsg"),"This page isn’t connected yet: paste the Apps Script URL into API_URL in index.html.","err");$("join").disabled=true}
+else if(me&&pin)showMain();else showSetup();
+setInterval(()=>{if(!$("main").hidden&&document.visibilityState==="visible")load()},30000);
+</script>
+</body>
+</html>
