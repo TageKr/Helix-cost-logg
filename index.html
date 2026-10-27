@@ -246,7 +246,7 @@ async function load(){
 function renderTally(){
   const count=l=>entries.filter(e=>e.type===l).reduce((a,e)=>a+(e.qty||1),0);
   const wireMm=entries.filter(e=>byLabel[e.type]?.wire&&e.len).reduce((a,e)=>a+e.len*(e.qty||1),0);
-  $("tally").innerHTML=[[fmtLen(wireMm),"Wire cut total"],[count("Wire cut"),"Wires cut"],[count("Crimp"),"Crimps"],[count("Solder joint"),"Solder joints"],[count("Splice"),"Splices"],[entries.length,"Log entries"]]
+    $("tally").innerHTML=[[fmtLen(wireMm),"Wire cut total"],...TYPES.map(t=>[count(t.l),t.l]),[entries.length,"Log entries"]]
     .map(c=>`<div><b>${c[0]}</b><small>${c[1]}</small></div>`).join("");
 }
 function renderLog(){
